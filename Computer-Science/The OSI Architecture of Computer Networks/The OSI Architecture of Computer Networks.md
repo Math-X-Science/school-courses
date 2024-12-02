@@ -220,7 +220,9 @@ $$\text{发送时延} \geq 2 \times \text{传播时延}$$
 
 另外，碰撞和监听也并不只有`CSMA/CD`。
 
+`CSMA/CD`并不适用于无线通信。且无线不会冲突，因为信道也共用。
 
+另外有一个`CDMA`,是无线的，不要搞混。
 
 ### FLAG
 
@@ -282,3 +284,30 @@ MAC地址分成单，多，广（全为1）。
 
 余数为0,则没有误码。
 
+
+
+## 4.网络层
+
+![image-20241202203707852](https://fastly.jsdelivr.net/gh/MrXnneHang/blog_img/BlogHosting/img/24/11/202412022037137.png)
+
+![image-20241202203548074](https://fastly.jsdelivr.net/gh/MrXnneHang/blog_img/BlogHosting/img/24/11/202412022035652.png)
+
+![image-20241202203605046](https://fastly.jsdelivr.net/gh/MrXnneHang/blog_img/BlogHosting/img/24/11/202412022036396.png)
+
+### 子网起点终点
+
+- 0 不用， 1 不用
+- 确定分子网的位数
+- 32位，确定起点终点。
+
+示例`168.16.80.24/20`:
+
+转换32位二进制数 -> 后十二位置0确定主机端口 -> 后十二位置1确定广播端口。
+
+可用端口号起点~终点为排除了0和1的所有端口。
+
+### `IPv4` 和 `IPv6`
+
+`IPv4`首部固定20字节。
+
+`IPv6`首部长度不固定。
