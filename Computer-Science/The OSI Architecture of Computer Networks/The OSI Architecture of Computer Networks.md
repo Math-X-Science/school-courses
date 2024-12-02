@@ -202,7 +202,7 @@ SNR:信(号)噪(声)比
 >
 > 冲突n次，从n个中选择一个k等待:
 >
-> $$等待时间 = k \times 往返时$$
+> $$等待时间 = k \times 往返时间（争用时间）$$
 >
 > 强化后立刻退避。
 
@@ -234,4 +234,51 @@ $$\text{发送时延} \geq 2 \times \text{传播时延}$$
 
 ![image-20241202192128970](https://fastly.jsdelivr.net/gh/MrXnneHang/blog_img/BlogHosting/img/24/11/202412021921800.png)
 
-于异步传输时，采用字节填充法
+
+
+### MAC帧结构
+
+![image-20241202193816622](https://fastly.jsdelivr.net/gh/MrXnneHang/blog_img/BlogHosting/img/24/11/202412021938359.png)
+
+MAC帧的部分主要是为了校验，和规范化。
+
+MAC地址分成单，多，广（全为1）。
+
+### 传统局域网
+
+与传统以太网相比，交换式以太网具有以下特点：
+
+- 隔离了冲突域，增大了网络跨距。
+
+- 处于一个广播域，可能产生广播风暴。
+
+#### 冲突域和广播域
+
+路由器隔离广播域。（不同于路由器）
+
+交换机隔离冲突域。（划分信道）
+
+> [!note]
+>
+> 转发时，无缓存，先广播（发送者除外）。
+>
+> 确认时，直接回发送者。
+
+![image-20241202201804189](https://fastly.jsdelivr.net/gh/MrXnneHang/blog_img/BlogHosting/img/24/11/202412022018910.png)
+
+回去时，只回发送者，所以H1收不到。
+
+而Hub(集线器)比交换机蠢一点。
+
+集线器不隔离（共用信道）
+
+
+
+### CRC校验
+
+二进制除法：从高位向低位做xor
+
+![image-20241202200523879](https://fastly.jsdelivr.net/gh/MrXnneHang/blog_img/BlogHosting/img/24/11/202412022005698.png)
+
+余数为0,则没有误码。
+
