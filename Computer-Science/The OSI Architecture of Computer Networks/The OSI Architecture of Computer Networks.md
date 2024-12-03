@@ -347,3 +347,73 @@ http基于TCP。
 https基于TCP+SSL。
 
 ![image-20241202224850970](https://fastly.jsdelivr.net/gh/MrXnneHang/blog_img/BlogHosting/img/24/11/202412022248056.png)
+
+### TCP报文头部
+
+![image-20241203081140139](https://fastly.jsdelivr.net/gh/MrXnneHang/blog_img/BlogHosting/img/24/11/202412030811735.png)
+
+#### 确认序号和序号
+
+- 确认序号是对方下次要发的首部字节序号
+
+- 序号等于对方的确认序号否则就是中间就发送丢失
+
+- 对于各自来说，发送的字节序号上是连续的（你连续你的，我连续我的）
+
+### $$seq、ack$$
+
+$$seq$$实际上就是序列长度
+
+$$ack=seq+1$$实际上就是确认序号
+
+#### ACK
+
+ACK正常情况总为1,表示确认。
+
+#### URG
+
+`URG=1`则紧急立刻发送
+
+#### RST
+
+`Reset`
+
+#### SYN
+
+`SYN=1`表示请求建立连接 
+
+#### FIN
+
+`Final`,结束连接
+
+### TCP三报文握手（建立连接）和四报文握手（断开连接）
+
+总是一个发，一个立刻确认，然后接着发，接着确认。
+
+只有在第一次发送时，$$ACK=0,SYN=1$$
+
+![image-20241203082019053](https://fastly.jsdelivr.net/gh/MrXnneHang/blog_img/BlogHosting/img/24/11/202412030820316.png)
+
+![image-20241203081920013](https://fastly.jsdelivr.net/gh/MrXnneHang/blog_img/BlogHosting/img/24/11/202412030819774.png)
+
+### 回退N帧、选择重传、停止等待
+
+都具有一个特点：
+
+一旦确认序号对不上序号，不发送ACK。
+
+#### 回退N帧：一旦对不上，后续不再ACK
+
+窗口前移，到缺失地方重新发送。
+
+具有累积ACK的特点，没有ACK不一定没有收到，比如0,2,3有ACK,那么1也是被确认的，不然就不会有2,3。另外终点也会ACK,可以确认终点是3。
+
+#### 选择重传：对不上，后续接着ACK
+
+重发缺失ACK的部分。
+
+接收到一个立刻发一个ACK。
+
+#### 停止等待：发一个，等一下，没收到ACK就不接着发。
+
+超时重传。
