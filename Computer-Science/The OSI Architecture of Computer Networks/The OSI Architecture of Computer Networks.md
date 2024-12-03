@@ -577,3 +577,166 @@ unsigned short CalculteCheckSum(unsigned short *pSendWordBuff, unsigned int nWor
 }
 ```
 
+
+
+### Socket编程
+
+```C
+```cpp
+#include <iostream>
+#include <cstring>
+#include <sys/socket.h>
+#include <netinet/ip_icmp.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <netdb.h>
+#include <chrono>
+
+// ICMP 校验和函数
+unsigned short checksum(void* b, int len) {
+    unsigned short* buf = (unsigned short*)b;
+    unsigned int sum = 0;
+    unsigned short result;
+    for (sum = 0; len > 1; len -= 2)
+        sum += *buf++;
+    if (len == 1)
+        sum += *(unsigned char*)buf;
+    sum = (sum >> 16) + (sum & 0xFFFF);
+    sum += (sum >> 16);
+    result = ~sum;
+    return result;
+}
+
+// 计算时间差（返回毫秒）
+long time_diff(struct timeval start, struct timeval end) {
+    return (end.tv_sec - start.tv_sec) * 1000 + (end.tv_usec - start.tv_usec) / 1000;
+}
+
+// 构建并发送 ICMP Echo Request
+void send_icmp(int sockfd, sockaddr_in* addr, int ttl) {
+    char packet[64];
+    struct icmphdr* icmp_hdr = (struct icmphdr*)packet;
+    // 填充 ICMP 头
+    memset(packet, 0, sizeof(packet));
+    icmp_hdr->type = ICMP_ECHO;
+    icmp_hdr->code = 0;
+    icmp_hdr->un.echo.id = getpid();
+    icmp_hdr->un.echo.sequence = ttl;
+    icmp_hdr->checksum = checksum(icmp_hdr, sizeof(packet));
+    // 设置 TTL
+    setsockopt(sockfd, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl));
+    // 发送数据包
+    sendto(sockfd, packet, sizeof(packet), 0, (sockaddr*)addr, sizeof(*addr));
+}
+
+// 接收 ICMP Echo Reply 或 Time Exceeded 消息
+bool receive_icmp(int sockfd, sockaddr_in* reply_addr, long& rtt) {
+    char buffer[1024];
+    socklen_t addrlen = sizeof(*reply_addr);
+    struct timeval start, end;
+    gettimeofday(&start, nullptr);
+    int received_bytes = recvfrom(sockfd, buffer, sizeof(buffer), 0, (sockaddr*)reply_addr, &addrlen);
+    gettimeofday(&end, nullptr);
+    if (received_bytes > 0) {
+        struct iphdr* ip_hdr = (struct iphdr*)buffer;
+        struct icmphdr* icmp_hdr = (struct icmphdr*)(buffer + (ip_hdr->ihl * 4));
+        rtt = time_diff(start, end);
+        // 判断 ICMP 类型，是否为 Echo Reply 或 TTL 超时
+        if (icmp_hdr->type == ICMP_ECHOREPLY) {
+            return true; // 收到目标的回复
+        } else if (icmp_hdr->type == ICMP_TIME_EXCEEDED) {
+            return true; // 收到中间路由器的 TTL 超时
+        }
+    }
+    return false;
+}
+
+int main(int argc, char* argv[]) {
+    if (argc != 2) {
+        std::cerr << "Usage: tracert <IP Address/Host Name>" << std::endl;
+        return 1;
+    }
+
+    struct addrinfo hints, *res;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET; // 使用 IPv4
+    // 解析目标主机名或 IP 地址
+    if (getaddrinfo(argv[1], nullptr, &hints, &res) != 0) {
+        std::cerr << "Error resolving hostname" << std::endl;
+        return 1;
+    }
+
+    sockaddr_in dest_addr = *(sockaddr_in*)res->ai_addr;
+    char ip_str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &(dest_addr.sin_addr), ip_str, INET_ADDRSTRLEN);
+    std::cout << "Tracing route to " << argv[1] << " [" << ip_str << "]" << std::endl;
+    std::cout << "Over a maximum of 30 hops:\n" << std::endl;
+
+    // 创建原始套接字
+    int sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+    if (sockfd < 0) {
+        std::cerr << "Error creating socket" << std::endl;
+        return 1;
+    }
+
+    // 设置接收超时为 3 秒
+    struct timeval timeout;
+    timeout.tv_sec = 3;
+    timeout.tv_usec = 0;
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
+    const int max_hops = 30;
+    for (int ttl = 1; ttl <= max_hops; ++ttl) {
+        std::cout << "Sending ICMP packet with TTL = " << ttl << std::endl;
+        send_icmp(sockfd, &dest_addr, ttl);
+        sockaddr_in reply_addr;
+        long rtt = 0;
+        bool success = receive_icmp(sockfd, &reply_addr, rtt);
+        if (success) {
+            char reply_ip[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &(reply_addr.sin_addr), reply_ip, INET_ADDRSTRLEN);
+            std::cout << ttl << " " << rtt << "ms " << reply_ip << std::endl;
+            // 如果到达目标主机，则完成
+            if (reply_addr.sin_addr.s_addr == dest_addr.sin_addr.s_addr) {
+                break;
+            }
+        } else {
+            std::cout << ttl << " * * * Request timed out." << std::endl;
+        }
+    }
+
+    close(sockfd);
+    return 0;
+}
+```
+
+
+
+`socket()`创建套接字：
+
+```C
+//TCP
+int tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
+if (tcp_socket == -1) {
+    perror("socket creation failed");
+    // 处理错误
+}
+
+//UDP
+int tcp_socket = socket(AF_INET, SOCK_DGRAM, 0);
+if (tcp_socket == -1) {
+    perror("socket creation failed");
+    // 处理错误
+}
+
+//ICMP
+int tcp_socket = socket(AF_INET, SOCK_RAW, 0);
+if (tcp_socket == -1) {
+    perror("socket creation failed");
+    // 处理错误
+}
+
+```
+
