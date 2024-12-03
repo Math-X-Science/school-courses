@@ -192,7 +192,7 @@ SNR:信(号)噪(声)比
 >
 > 冲突n次，从n个中选择一个k等待:
 >
-> $$等待时间 = k \times 往返时间（争用时间）$$
+> $$等待时间 = k \times 往返时间（争用时间 or RTT）$$
 >
 > 强化后立刻退避。
 
@@ -334,7 +334,19 @@ MAC地址分成单，多，广（全为1）。
 
 ### `ICMP`
 
+![image-20241203102109352](https://fastly.jsdelivr.net/gh/MrXnneHang/blog_img/BlogHosting/img/24/11/202412031021602.png)
+
+报告错误，规范化参数，控制拥塞。
+
+不可达（404），超时（403）？似乎和这类有关。
+
 ### `RIP`
+
+![image-20241203102025935](https://fastly.jsdelivr.net/gh/MrXnneHang/blog_img/BlogHosting/img/24/11/202412031020375.png)
+
+`traceroute`、`tracert`。
+
+限制跳数，和决定跳的方向，广播路由表。
 
 ## 5.运输层
 
@@ -482,3 +494,68 @@ IP端口可以手动设置，也可以请求DHCP配置。
 
 ### $$ACK$$
 
+
+
+## 7.程序设计题：
+
+### MAC帧封装：
+
+$$前导码-帧定界符-⽬的地址-源地址-⻓度字段(数据字段长度)-数据字段（46～1500）-校验字段（CRC）$$
+
+```txt
+D5 55 55 55 55 55 55 D5 00 11 22 33 44 55 AA BB CC DD EE FF 00 2E 
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+00 00 00 00 00 00 00 00 00 00 00 00 01 23 45 67
+```
+
+通常而言长这样。一个2位16进制数代表一个字节。
+
+```c
+struct MacFrame
+{
+	unsigned char ucArrPrecode[7]; //7字节前导码
+	unsigned char ucBoundary; //帧定界 1字节
+	unsigned char UcArrDecAdd[6]; //目的地址
+	unsigned char UcArrSourceAdd[6]; //源地址
+	unsigned short nLen; //长度 46~1500
+	unsigned char* ucArrData; //不定长的数据块
+	unsigned char CRC; //一字节的校验码
+}
+// 去他妈妈的葡萄牙命名法
+void FillMacFrame(
+	MacFrame* pMacFrame,
+	unsigned char* ucArrDecAdd,
+	unsigned char* ucArrSourceAdd,
+	unsigned short nLen,
+	unsigned char* pData,
+	unsigned char CRC,
+)
+{
+	for(int i=0;i<7;i++)
+		pMacFrame.ucArraryPrecode[i] = 01010101;
+	pMacFrame.ucBoundary = 01010101;
+	for(int i=0;i<6;i++)
+	{
+		pMacFrame.UcArrDecAdd[i]=ucArrDecAdd[i]
+		pMacFrame.UcArrSourceAdd[i]=ucArrSourceAdd[i]
+	}
+	pMacFrame.nLen = (nLen<46)?46:nLen;
+	// 用malloc初始化是垃圾值，没有赋值的话是未知
+	pMacFrame.ucArrData = malloc(pMacFrame.nLen+64-46)
+	for(int i=0;i<sizeof(UcData)&&i<nLen;i++)
+	{
+		pMacFrame.ucArrData[i]=UcData[i];
+		CalCulateCRC（pMacFrame， CRC）;
+	}
+	for(int i=sizeof(UcData);i<nLen;i++)
+	{
+		// Data不足46字节，需要补充0
+		pMacFrame.ucArrData[i]=0;
+		CalCulateCRC（pMacFrame， CRC）;
+	}
+}
+```
+
+- 前导码56位(7字节)的1010101…1010⽐特序列组成，帧定界符为1字节，结构为10101011。
+- ⽬的地址和源地址均采⽤6字节。(48bit)
