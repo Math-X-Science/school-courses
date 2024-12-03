@@ -200,6 +200,10 @@ $$\text{发送时延} \geq 2 \times \text{传播时延}$$
 
 至于为什么是`X2`，这里似乎和各种情况的考量有关。这里时间不够就先跳过了。
 
+如果用到这个公式，需要确认，发送数据块的单位一般是(B),而带宽通常是bps。
+
+$$1Byte=8bit$$
+
 ![image-20241202184514164](https://fastly.jsdelivr.net/gh/MrXnneHang/blog_img/BlogHosting/img/24/11/202412021845394.png)
 
 以及这里有一个补充。
@@ -442,4 +446,12 @@ ACK正常情况总为1,表示确认。
 
 超时重传。
 
-### 
+### 流量控制
+
+![image-20241203084710196](https://fastly.jsdelivr.net/gh/MrXnneHang/blog_img/BlogHosting/img/24/11/202412030847985.png)
+
+$$发送窗口值 = \min\{\text{拥塞窗口值}, \text{接收窗口值}\}$$
+
+### 拥塞控制
+
+请求超时断开连接实际上就是一种拥塞控制的体现。
