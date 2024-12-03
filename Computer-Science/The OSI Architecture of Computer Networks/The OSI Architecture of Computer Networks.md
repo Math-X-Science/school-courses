@@ -546,16 +546,34 @@ void FillMacFrame(
 	for(int i=0;i<sizeof(UcData)&&i<nLen;i++)
 	{
 		pMacFrame.ucArrData[i]=UcData[i];
-		CalCulateCRC（pMacFrame， CRC）;
 	}
 	for(int i=sizeof(UcData);i<nLen;i++)
 	{
 		// Data不足46字节，需要补充0
 		pMacFrame.ucArrData[i]=0;
-		CalCulateCRC（pMacFrame， CRC）;
 	}
+    CalCulateCRC（pMacFrame， CRC）;
 }
 ```
 
 - 前导码56位(7字节)的1010101…1010⽐特序列组成，帧定界符为1字节，结构为10101011。
 - ⽬的地址和源地址均采⽤6字节。(48bit)
+
+
+
+### 校验和
+
+```C
+unsigned short CalculteCheckSum(unsigned short *pSendWordBuff, unsigned int nWordTotal)
+{
+    unsigned short usCheckSum; //校验和
+    unsinged long ulTempCheckSum = 0; //sum
+    int i;
+    for(i=0;i<nWordTotal;i++) //按照byte进行校验计算，对每个short进行校验
+        ulTempCheckSum = ulTempCheckSum  + pSendWordBuff[i]; //sum
+    usCheckSum = ~( (ulTempCheckSum  & 0x0000FFFF) + (ulTempCheckSum   >> 16));
+    // 低16位+高16位取反得到校验和
+    return usCheckSum ;
+}
+```
+
